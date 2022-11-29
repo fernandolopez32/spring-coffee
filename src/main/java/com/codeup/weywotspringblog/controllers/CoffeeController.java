@@ -1,8 +1,10 @@
 package com.codeup.weywotspringblog.controllers;
 
 import com.codeup.weywotspringblog.models.Coffee;
+import com.codeup.weywotspringblog.models.Customer;
 import com.codeup.weywotspringblog.models.Supplier;
 import com.codeup.weywotspringblog.repositories.CoffeeRepository;
+import com.codeup.weywotspringblog.repositories.CustomerRepository;
 import com.codeup.weywotspringblog.repositories.SupplierRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,9 +20,12 @@ public class CoffeeController {
     private final CoffeeRepository coffeeDao;
     private final SupplierRepository suppliersDao;
 
-    public CoffeeController(CoffeeRepository coffeeDao, SupplierRepository suppliersDao){
+    private final CustomerRepository customerDao;
+
+    public CoffeeController(CoffeeRepository coffeeDao, SupplierRepository suppliersDao, CustomerRepository customerDao){
         this.coffeeDao = coffeeDao;
         this.suppliersDao = suppliersDao;
+        this.customerDao = customerDao;
     }
 
     @GetMapping
@@ -80,5 +85,28 @@ public class CoffeeController {
         Supplier supplier = new Supplier(name);
         suppliersDao.save(supplier);
         return "redirect:/coffee/suppliers";
+    }
+
+    @GetMapping("/register")
+    public String showRegistrationForm(Model model){
+        model.addAttribute("customer",new Customer());
+        return "/registration";
+    }
+
+    @PostMapping("/customer/new")
+    public String registerCustomer(@RequestParam(name = "name") String name,@RequestParam(name = "email")String email){
+        customerDao.save(new Customer(name,email));
+        return "redirect:/coffee";
+    }
+
+    @PostMapping("/customer/{customerId}/favorite/{coffeeId}")
+    public String favoriteCoffee(@PathVariable long customerId,@PathVariable long coffeeId){
+
+        Customer customer = customerDao.findById(customerId);
+        List<Coffee> favorites = customer.getCoffeeList();
+        favorites.add(coffeeDao.findById(coffeeId));
+        customer.setCoffeeList(favorites);
+        customerDao.save(customer);
+        return "redirect:/coffee";
     }
 }
